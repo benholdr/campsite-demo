@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinecrest Ridge | Campsite Lease & Reservation Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Fraunces for Editorial Outdoor Aesthetic -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Fraunces', 'serif'],
+                    },
+                    colors: {
+                        forest: {
+                            50: '#f2f7f4',
+                            100: '#e0ece4',
+                            200: '#c2d9cb',
+                            300: '#98beaa',
+                            400: '#6b9d84',
+                            500: '#498066',
+                            600: '#366550',
+                            700: '#2b5140',
+                            800: '#1f3b2f',
+                            900: '#152920',
+                        },
+                        sand: {
+                            50: '#fdfcfa',
+                            100: '#f8f5ee',
+                            200: '#efe9da',
+                            300: '#e2d7be',
+                            400: '#cfbe9a',
+                        },
+                        terracotta: {
+                            500: '#c85a32',
+                            600: '#b04823',
+                            700: '#913819',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar & Subtle Animations */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f8f5ee;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cfbe9a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #98beaa;
+        }
+        .map-pin {
+            transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.2s ease;
+            cursor: pointer;
+        }
+        .map-pin:hover {
+            transform: scale(1.15);
+            filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.2));
+        }
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-card {
+            animation: fadeSlideUp 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-sand-100 text-forest-900 font-sans antialiased min-h-screen flex flex-col selection:bg-forest-200 selection:text-forest-900">
+
+    <!-- Top Notification Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+    <!-- Header Navigation -->
+    <header class="bg-forest-900 text-sand-50 sticky top-0 z-30 shadow-md border-b border-forest-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
+            <!-- Brand Identity -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-terracotta-500 flex items-center justify-center text-white shadow-inner">
+                    <i data-lucide="trees" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-serif text-lg sm:text-2xl font-bold tracking-tight text-sand-50 leading-none">Pinecrest Ridge</h1>
+                    <p class="text-[11px] sm:text-xs text-forest-300 tracking-wider uppercase mt-0.5 font-medium">Bernice, OK • Grand Lake Leases</p>
+                </div>
+            </div>
+
+            <!-- Navigation Actions -->
+            <div class="flex items-center gap-2 sm:gap-3">
+                <a href="tel:+19185550194" class="flex items-center gap-2 bg-forest-800 hover:bg-forest-700 text-sand-50 px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl border border-forest-700 text-xs sm:text-sm font-semibold transition" title="Call Campground Office">
+                    <i data-lucide="phone-call" class="w-4 h-4 text-amber-300 shrink-0"></i>
+                    <span class="hidden sm:inline text-forest-300 font-normal">Contact Us:</span>
+                    <span>(918) 555-0194</span>
+                </a>
+
+                <button id="open-requests-btn" class="relative flex items-center gap-2 bg-sand-100 hover:bg-white text-forest-900 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl font-semibold text-sm transition shadow-sm active:scale-95">
+                    <i data-lucide="calendar-check-2" class="w-4 h-4 text-terracotta-600"></i>
+                    <span class="hidden md:inline">My Lease Requests</span>
+                    <span class="md:hidden">Leases</span>
+                    <span id="requests-badge" class="bg-terracotta-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">1</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Banner & Interactive Date/Filter Control Bar -->
+    <section class="bg-forest-800 text-sand-50 pt-8 pb-12 sm:pt-12 sm:pb-16 relative overflow-hidden">
+        <!-- Subtle Topographic SVG Pattern Overlay -->
+        <div class="absolute inset-0 opacity-10 pointer-events-none">
+            <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <pattern id="topo" width="120" height="120" patternUnits="userSpaceOnUse">
+                        <path d="M0 60 Q 30 30, 60 60 T 120 60 M0 30 Q 30 0, 60 30 T 120 30 M0 90 Q 30 60, 60 90 T 120 90" fill="none" stroke="#ffffff" stroke-width="1.5"/>
+                    </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#topo)"/>
+            </svg>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="max-w-2xl mb-8">
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <span class="inline-block text-xs font-semibold uppercase tracking-widest text-amber-300">Bernice, Oklahoma • Grand Lake</span>
+                    <span class="text-forest-400">•</span>
+                    <a href="#location-contact" class="text-xs font-medium text-forest-200 hover:text-white underline underline-offset-2">Main St &amp; 300 Ash St</a>
+                </div>
+                <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-white leading-tight">
+                    Claim Your Sanctuary on Grand Lake.
+                </h2>
+                <p class="text-forest-200 mt-3 text-sm sm:text-base leading-relaxed">
+                    Located in Bernice, OK near Main Street &amp; 300 Ash St. Select your desired lease dates below to inspect real-time campsite availability or call <a href="tel:+19185550194" class="text-amber-300 font-semibold hover:underline">(918) 555-0194</a> for assistance.
+                </p>
+            </div>
+
+            <!-- Main Search & Filter Card -->
+            <div class="bg-sand-50 text-forest-900 rounded-2xl shadow-xl p-4 sm:p-6 border border-sand-300">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+                    <!-- Check-in Date -->
+                    <div class="lg:col-span-3">
+                        <label for="checkin-input" class="block text-xs font-bold uppercase tracking-wider text-forest-700 mb-1.5">
+                            <i data-lucide="calendar-arrow-up" class="w-3.5 h-3.5 inline mr-1 text-terracotta-500"></i>Check-In Date
+                        </label>
+                        <input type="date" id="checkin-input" class="w-full bg-white border border-sand-300 focus:border-forest-600 focus:ring-2 focus:ring-forest-600/20 rounded-xl px-3.5 py-2.5 text-sm font-medium text-forest-900 outline-none transition">
+                    </div>
+
+                    <!-- Check-out Date -->
+                    <div class="lg:col-span-3">
+                        <label for="checkout-input" class="block text-xs font-bold uppercase tracking-wider text-forest-700 mb-1.5">
+                            <i data-lucide="calendar-arrow-down" class="w-3.5 h-3.5 inline mr-1 text-terracotta-500"></i>Check-Out Date
+                        </label>
+                        <input type="date" id="checkout-input" class="w-full bg-white border border-sand-300 focus:border-forest-600 focus:ring-2 focus:ring-forest-600/20 rounded-xl px-3.5 py-2.5 text-sm font-medium text-forest-900 outline-none transition">
+                    </div>
+
+                    <!-- Site Type Filter -->
+                    <div class="lg:col-span-3">
+                        <label for="type-filter" class="block text-xs font-bold uppercase tracking-wider text-forest-700 mb-1.5">
+                            <i data-lucide="tent" class="w-3.5 h-3.5 inline mr-1 text-forest-600"></i>Campsite Type
+                        </label>
+                        <select id="type-filter" class="w-full bg-white border border-sand-300 focus:border-forest-600 focus:ring-2 focus:ring-forest-600/20 rounded-xl px-3.5 py-2.5 text-sm font-medium text-forest-900 outline-none transition">
+                            <option value="All">All Campsite Types</option>
+                            <option value="Tent Site">Tent Site</option>
+                            <option value="RV Hookup">RV Hookup (30/50A)</option>
+                            <option value="Glamping Cabin">Glamping Cabin</option>
+                            <option value="Waterfront">Waterfront Premium</option>
+                        </select>
+                    </div>
+
+                    <!-- Guest Count Filter -->
+                    <div class="lg:col-span-3">
+                        <label for="guests-filter" class="block text-xs font-bold uppercase tracking-wider text-forest-700 mb-1.5">
+                            <i data-lucide="users" class="w-3.5 h-3.5 inline mr-1 text-forest-600"></i>Party Size (Guests)
+                        </label>
+                        <select id="guests-filter" class="w-full bg-white border border-sand-300 focus:border-forest-600 focus:ring-2 focus:ring-forest-600/20 rounded-xl px-3.5 py-2.5 text-sm font-medium text-forest-900 outline-none transition">
+                            <option value="1">1 Guest</option>
+                            <option value="2" selected>2 Guests</option>
+                            <option value="4">4 Guests</option>
+                            <option value="6">6 Guests</option>
+                            <option value="8">8+ Guests</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Quick Date Presets & Status Summary -->
+                <div class="mt-4 pt-4 border-t border-sand-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        <span class="text-forest-600 font-semibold">Quick Dates:</span>
+                        <button type="button" data-preset="this-weekend" class="preset-btn px-2.5 py-1 rounded-lg bg-sand-200 hover:bg-forest-100 text-forest-800 font-medium transition">This Weekend (3 Nights)</button>
+                        <button type="button" data-preset="next-week" class="preset-btn px-2.5 py-1 rounded-lg bg-sand-200 hover:bg-forest-100 text-forest-800 font-medium transition">Next Week (4 Nights)</button>
+                        <button type="button" data-preset="thanksgiving" class="preset-btn px-2.5 py-1 rounded-lg bg-sand-200 hover:bg-forest-100 text-forest-800 font-medium transition">Holiday Week (5 Nights)</button>
+                    </div>
+
+                    <div id="date-summary-pill" class="text-xs font-semibold text-forest-800 bg-forest-100 px-3 py-1.5 rounded-lg inline-flex items-center gap-1.5 self-start sm:self-auto">
+                        <i data-lucide="moon" class="w-3.5 h-3.5 text-forest-600"></i>
+                        <span id="nights-display">3 Nights Selected</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Workspace: Controls & Grid/Map Views -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- View Controls & Availability Counter Bar -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+                <div class="flex items-center gap-3">
+                    <h3 class="font-serif text-2xl font-bold text-forest-900">Available Campsites</h3>
+                    <span id="availability-counter" class="bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold px-2.5 py-1 rounded-full">
+                        0 of 0 Available
+                    </span>
+                </div>
+                <p id="active-period-label" class="text-sm text-forest-600 mt-0.5">Showing availability for selected dates</p>
+            </div>
+
+            <!-- Right Controls: Show Unavailable Toggle & Grid/Map View Switcher -->
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Show/Hide Unavailable Toggle -->
+                <label class="inline-flex items-center gap-2.5 cursor-pointer bg-white px-3.5 py-2 rounded-xl border border-sand-300 shadow-sm select-none">
+                    <input type="checkbox" id="show-unavailable-toggle" checked class="sr-only peer">
+                    <div class="w-9 h-5 bg-sand-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-forest-700 relative"></div>
+                    <span class="text-xs font-semibold text-forest-800">Show Booked Sites</span>
+                </label>
+
+                <!-- View Mode Switcher -->
+                <div class="inline-flex rounded-xl bg-sand-200 p-1 border border-sand-300 shadow-inner">
+                    <button id="view-grid-btn" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-forest-900 shadow-sm transition">
+                        <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+                        <span>Grid View</span>
+                    </button>
+                    <button id="view-map-btn" class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-forest-700 hover:text-forest-900 transition">
+                        <i data-lucide="map" class="w-3.5 h-3.5"></i>
+                        <span>Campground Map</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Date Validation Alert (Hidden by default) -->
+        <div id="date-error-banner" class="hidden mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl flex items-center gap-3 text-sm">
+            <i data-lucide="alert-circle" class="w-5 h-5 text-red-600 shrink-0"></i>
+            <span id="date-error-text">Check-out date must be after check-in date.</span>
+        </div>
+
+        <!-- VIEW 1: CAMPSITE GRID VIEW -->
+        <div id="grid-view-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Cards injected dynamically via JS -->
+        </div>
+
+        <!-- Empty State (Shown when filters match 0 sites) -->
+        <div id="empty-state" class="hidden bg-white rounded-2xl border border-sand-300 p-12 text-center max-w-lg mx-auto my-8 shadow-sm">
+            <div class="w-14 h-14 bg-sand-200 text-forest-700 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <i data-lucide="compass" class="w-7 h-7"></i>
+            </div>
+            <h4 class="font-serif text-xl font-bold text-forest-900">No Matching Campsites</h4>
+            <p class="text-sm text-forest-600 mt-2">
+                No sites match your current filter settings or all matching sites are leased during this period. Try enabling "Show Booked Sites" or adjusting your dates.
+            </p>
+            <button id="reset-filters-btn" class="mt-5 px-4 py-2 bg-forest-800 hover:bg-forest-700 text-white text-sm font-semibold rounded-xl transition">
+                Reset All Filters
+            </button>
+        </div>
+
+        <!-- VIEW 2: INTERACTIVE CAMPGROUND SVG MAP VIEW -->
+        <div id="map-view-container" class="hidden">
+            <div class="bg-white rounded-2xl border border-sand-300 shadow-md overflow-hidden">
+                <!-- Map Legend & Instructions -->
+                <div class="bg-sand-50 px-5 py-3.5 border-b border-sand-200 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-2 text-xs font-medium text-forest-700">
+                        <i data-lucide="mouse-pointer-click" class="w-4 h-4 text-terracotta-500"></i>
+                        <span>Click any campsite pin on the map to inspect details or request a lease.</span>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-4 text-xs font-semibold">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full bg-emerald-600 ring-2 ring-emerald-200"></span>
+                            <span class="text-forest-900">Available</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full bg-rose-500 ring-2 ring-rose-200"></span>
+                            <span class="text-forest-900">Leased / Booked</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-3 rounded-full bg-slate-300"></span>
+                            <span class="text-slate-500">Filtered Out</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Map Canvas Area -->
+                <div class="relative w-full overflow-x-auto bg-[#e6efe8]">
+                    <div class="min-w-[820px] relative">
+                        <svg id="campground-svg" viewBox="0 0 1000 580" class="w-full h-auto block select-none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Background Terrain -->
+                            <rect width="1000" height="580" fill="#e5efe7" />
+                            
+                            <!-- Subtle Elevation Contours -->
+                            <path d="M -20 120 Q 250 60, 480 150 T 1020 90" fill="none" stroke="#d5e4d8" stroke-width="2" />
+                            <path d="M -20 480 Q 320 420, 620 510 T 1020 460" fill="none" stroke="#d5e4d8" stroke-width="2" />
+                            <path d="M 550 -10 Q 510 240, 680 390 T 880 590" fill="none" stroke="#d5e4d8" stroke-width="2" />
+
+                            <!-- Pine Forest Clusters (Decorative) -->
+                            <g fill="#bad2c0" opacity="0.75">
+                                <polygon points="70,60 55,95 85,95" />
+                                <polygon points="105,45 88,85 122,85" />
+                                <polygon points="140,70 126,102 154,102" />
+                                <polygon points="880,65 862,105 898,105" />
+                                <polygon points="920,85 905,120 935,120" />
+                                <polygon points="940,470 920,515 960,515" />
+                                <polygon points="895,500 880,535 910,535" />
+                                <polygon points="80,490 62,530 98,530" />
+                                <polygon points="460,50 445,85 475,85" />
+                                <polygon points="500,65 486,98 514,98" />
+                            </g>
+
+                            <!-- Cedar Lake (Water Body) -->
+                            <path d="M 110 220 C 160 150, 340 155, 410 220 C 475 280, 450 395, 360 435 C 265 475, 135 445, 95 365 C 65 305, 75 270, 110 220 Z" fill="#78b7c9" stroke="#5ca0b4" stroke-width="4" />
+                            <!-- Lake Water Ripples -->
+                            <path d="M 180 270 Q 220 262, 260 270" fill="none" stroke="#a6d5e3" stroke-width="2.5" stroke-linecap="round" />
+                            <path d="M 230 335 Q 280 326, 330 335" fill="none" stroke="#a6d5e3" stroke-width="2.5" stroke-linecap="round" />
+                            <path d="M 155 360 Q 190 353, 225 360" fill="none" stroke="#a6d5e3" stroke-width="2.5" stroke-linecap="round" />
+                            <text x="255" y="308" text-anchor="middle" fill="#1e5363" font-family="Fraunces, serif" font-weight="700" font-size="18" letter-spacing="1">CEDAR LAKE</text>
+                            <text x="255" y="325" text-anchor="middle" fill="#29697c" font-family="Inter, sans-serif" font-weight="600" font-size="10">NON-MOTORIZED • KAYAK LAUNCH</text>
+
+                            <!-- Main Gravel Loop Road -->
+                            <path d="M 520 580 L 520 430 C 520 350, 520 210, 620 175 C 720 140, 845 170, 865 275 C 885 380, 825 465, 690 465 L 520 465" fill="none" stroke="#d8ccb8" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" />
+                            <path d="M 520 580 L 520 430 C 520 350, 520 210, 620 175 C 720 140, 845 170, 865 275 C 885 380, 825 465, 690 465 L 520 465" fill="none" stroke="#efe8da" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" />
+
+                            <!-- Hiking Trails (Dashed) -->
+                            <path d="M 410 220 C 460 180, 500 120, 570 95 C 660 65, 780 80, 850 130" fill="none" stroke="#9c7a54" stroke-width="3" stroke-dasharray="6,6" />
+                            <text x="680" y="72" text-anchor="middle" fill="#7d5e3c" font-family="Inter, sans-serif" font-weight="700" font-size="10" letter-spacing="1.5">RIDGECREST TRAIL →</text>
+
+                            <!-- Ranger Station & Entrance -->
+                            <g transform="translate(465, 515)">
+                                <rect x="0" y="0" width="110" height="42" rx="8" fill="#1f3b2f" />
+                                <text x="55" y="18" text-anchor="middle" fill="#fdfcfa" font-family="Inter, sans-serif" font-weight="700" font-size="10">RANGER CHECK-IN</text>
+                                <text x="55" y="32" text-anchor="middle" fill="#98beaa" font-family="Inter, sans-serif" font-size="9">Main Gate &amp; Store</text>
+                            </g>
+
+                            <!-- Central Bathhouse & Pavillion -->
+                            <g transform="translate(645, 295)">
+                                <rect x="0" y="0" width="96" height="44" rx="8" fill="#5e4b3c" />
+                                <text x="48" y="19" text-anchor="middle" fill="#ffffff" font-family="Inter, sans-serif" font-weight="700" font-size="10">BATHHOUSE</text>
+                                <text x="48" y="32" text-anchor="middle" fill="#e2d7be" font-family="Inter, sans-serif" font-size="9">Showers • Wi-Fi Hub</text>
+                            </g>
+
+                            <!-- Zone Labels -->
+                            <text x="260" y="125" text-anchor="middle" fill="#2b5140" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="1.2">NORTH SHORE WATERFRONT</text>
+                            <text x="735" y="128" text-anchor="middle" fill="#2b5140" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="1.2">TIMBER RV LOOP</text>
+                            <text x="740" y="515" text-anchor="middle" fill="#2b5140" font-family="Inter, sans-serif" font-weight="700" font-size="11" letter-spacing="1.2">GLAMPING MEADOW &amp; PINES</text>
+
+                            <!-- Dynamic Campsite Pins Group -->
+                            <g id="map-pins-layer"></g>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Selected Map Site Quick-Preview Drawer Footer -->
+                <div id="map-selected-bar" class="bg-sand-100 border-t border-sand-300 p-4 sm:px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div id="map-preview-info" class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-forest-100 text-forest-800 flex items-center justify-center font-bold text-sm">
+                            <i data-lucide="map-pin" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-forest-900">Select a campsite marker above</p>
+                            <p class="text-xs text-forest-600">Inspect nightly pricing, hookups, and request a lease directly from the map.</p>
+                        </div>
+                    </div>
+                    <div id="map-preview-actions" class="hidden">
+                        <!-- Dynamically populated button -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOCATION, DIRECTIONS & CONTACT US SECTION -->
+        <section id="location-contact" class="mt-14 pt-10 border-t border-sand-300">
+            <div class="mb-6">
+                <span class="text-xs font-bold uppercase tracking-widest text-terracotta-600">Visit &amp; Contact Us</span>
+                <h3 class="font-serif text-2xl sm:text-3xl font-bold text-forest-900 mt-1">Location &amp; Directions in Bernice, OK</h3>
+                <p class="text-sm text-forest-600 mt-1">Conveniently situated near Main Street and 300 Ash St on the shores of Grand Lake O' the Cherokees.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                <!-- Left Column: Address & Direct Phone Contact Card -->
+                <div class="lg:col-span-5 bg-white rounded-2xl border border-sand-300 p-6 shadow-sm flex flex-col justify-between space-y-6">
+                    <div class="space-y-5">
+                        <!-- Prominent Contact Phone Callout -->
+                        <div class="bg-forest-900 text-sand-50 rounded-xl p-5 shadow-inner">
+                            <div class="flex items-center gap-2 text-amber-300 text-xs font-bold uppercase tracking-wider mb-1">
+                                <i data-lucide="phone" class="w-4 h-4"></i>
+                                <span>Direct Reservation &amp; Ranger Desk</span>
+                            </div>
+                            <a href="tel:+19185550194" class="block font-serif text-2xl sm:text-3xl font-bold text-white hover:text-amber-300 transition mt-1">
+                                (918) 555-0194
+                            </a>
+                            <p class="text-xs text-forest-200 mt-1.5">
+                                Call or text daily 7:00 AM – 9:00 PM CST for seasonal lease inquiries, RV length checks, or after-hours gate codes.
+                            </p>
+                        </div>
+
+                        <!-- Physical Address -->
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-sand-200 text-forest-800 flex items-center justify-center shrink-0 mt-0.5">
+                                <i data-lucide="map-pin" class="w-5 h-5 text-terracotta-600"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-forest-900">Campground Entrance Address</h4>
+                                <p class="text-sm text-forest-700 mt-0.5 leading-relaxed">
+                                    300 Ash St (Near Main Street)<br>
+                                    Bernice, OK 74331
+                                </p>
+                                <p class="text-xs text-forest-500 mt-1">Delaware County • Grand Lake O' the Cherokees</p>
+                            </div>
+                        </div>
+
+                        <!-- Check-In & Office Hours -->
+                        <div class="flex items-start gap-3.5">
+                            <div class="w-10 h-10 rounded-xl bg-sand-200 text-forest-800 flex items-center justify-center shrink-0 mt-0.5">
+                                <i data-lucide="clock" class="w-5 h-5 text-forest-700"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-forest-900">Check-In &amp; Gate Hours</h4>
+                                <p class="text-xs text-forest-700 mt-1 leading-relaxed">
+                                    <span class="font-semibold">Check-In:</span> 2:00 PM • <span class="font-semibold">Check-Out:</span> 11:00 AM<br>
+                                    <span class="font-semibold">Camp Store &amp; Bait Shop:</span> 7:00 AM – 8:00 PM
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- External Google Maps Button -->
+                    <div class="pt-4 border-t border-sand-200 flex flex-wrap items-center gap-3">
+                        <a href="https://www.google.com/maps/search/?api=1&query=300+Ash+St,+Bernice,+OK+74331" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto flex-grow text-center px-4 py-2.5 bg-forest-800 hover:bg-forest-700 text-white text-xs font-bold rounded-xl transition inline-flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="navigation" class="w-4 h-4 text-amber-300"></i>
+                            <span>Open in Google Maps</span>
+                        </a>
+                        <a href="tel:+19185550194" class="w-full sm:w-auto px-4 py-2.5 bg-terracotta-500 hover:bg-terracotta-600 text-white text-xs font-bold rounded-xl transition inline-flex items-center justify-center gap-2 shadow-sm">
+                            <i data-lucide="phone-call" class="w-4 h-4"></i>
+                            <span>Call Office</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Right Column: Embedded Google Map -->
+                <div class="lg:col-span-7 bg-white rounded-2xl border border-sand-300 shadow-sm overflow-hidden flex flex-col min-h-[340px]">
+                    <div class="bg-sand-50 px-4 py-2.5 border-b border-sand-200 flex items-center justify-between text-xs">
+                        <span class="font-semibold text-forest-800 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            Interactive Map: Main St &amp; 300 Ash St, Bernice, OK
+                        </span>
+                        <span class="text-forest-500 font-mono">36.615° N, 94.918° W</span>
+                    </div>
+                    <div class="relative flex-grow w-full h-full min-h-[320px]">
+                        <iframe
+                            title="Google Map of Pinecrest Ridge Campground near Main Street and 300 Ash St, Bernice, Oklahoma"
+                            src="https://maps.google.com/maps?q=300+Ash+St,+Bernice,+OK+74331&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                            class="w-full h-full min-h-[320px] border-0"
+                            loading="lazy"
+                            referrerpolicy="no-referrer-when-downgrade">
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-forest-900 text-forest-300 py-8 mt-12 border-t border-forest-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
+            <div class="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                <i data-lucide="trees" class="w-4 h-4 text-terracotta-500"></i>
+                <span class="font-semibold text-sand-100">Pinecrest Ridge Campground &amp; Outpost</span>
+                <span>•</span>
+                <span>Near Main St &amp; 300 Ash St, Bernice, OK 74331</span>
+            </div>
+            <div class="flex flex-wrap items-center justify-center gap-4">
+                <a href="tel:+19185550194" class="text-amber-300 hover:text-white font-bold flex items-center gap-1.5 transition">
+                    <i data-lucide="phone" class="w-3.5 h-3.5"></i>
+                    <span>Contact Us: (918) 555-0194</span>
+                </a>
+                <span class="text-forest-600 hidden sm:inline">|</span>
+                <p class="text-forest-400">Live availability synced locally in browser.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 1: BOOKING / LEASE REQUEST MODAL                                -->
+    <!-- ===================================================================== -->
+    <div id="booking-modal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 bg-forest-950/60 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-sand-50 rounded-2xl shadow-2xl border border-sand-300 max-w-xl w-full overflow-hidden my-auto animate-card">
+            <!-- Modal Header -->
+            <div class="bg-forest-900 text-sand-50 px-6 py-4 flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] uppercase tracking-wider font-bold text-amber-300">Campsite Lease Application</span>
+                    <h3 id="modal-site-title" class="font-serif text-xl font-bold text-white">Site W-01 • Heron Cove</h3>
+                </div>
+                <button type="button" id="close-booking-modal" class="p-1.5 rounded-lg text-forest-300 hover:text-white hover:bg-forest-800 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <form id="booking-form" class="p-6 space-y-5">
+                <!-- Lease Summary Box -->
+                <div class="bg-white rounded-xl p-4 border border-sand-300 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-sand-200">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wider text-forest-500">Selected Lease Dates</p>
+                            <p id="modal-dates-text" class="text-sm font-bold text-forest-900 mt-0.5">Nov 20, 2026 → Nov 23, 2026 (3 Nights)</p>
+                        </div>
+                        <span id="modal-site-type-badge" class="text-xs font-bold px-2.5 py-1 rounded-lg bg-forest-100 text-forest-800">Waterfront</span>
+                    </div>
+
+                    <!-- Itemized Pricing Breakdown -->
+                    <div class="pt-3 space-y-1.5 text-sm">
+                        <div class="flex justify-between text-forest-700">
+                            <span id="modal-rate-calc">$85 × 3 nights</span>
+                            <span id="modal-subtotal" class="font-medium">$255.00</span>
+                        </div>
+                        <div class="flex justify-between text-forest-700">
+                            <span>Park Conservation &amp; Prep Fee</span>
+                            <span id="modal-park-fee" class="font-medium">$25.00</span>
+                        </div>
+                        <div class="flex justify-between text-base font-bold text-forest-900 pt-2 border-t border-sand-200">
+                            <span>Estimated Total Lease</span>
+                            <span id="modal-total-price" class="text-terracotta-600">$280.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Guest Form Inputs -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-forest-700 mb-1">Full Name *</label>
+                        <input type="text" id="guest-name" required placeholder="e.g. Jordan Vance" class="w-full bg-white border border-sand-300 focus:border-forest-600 focus:ring-2 focus:ring-forest-600/20 rounded-xl px-3.5 py-2 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-forest-700 mb-1">Email Address *</label>
+                        <input type="email" id="guest-email" required placeholder="jordan@example.com" class="w-full bg-white border border-sand-300 focus:border-forest-600 focus:ring-2 focus:ring-forest-600/20 rounded-xl px-3.5 py-2 text-sm outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-forest-700 mb-1">Setup / Rig Details *</label>
+                        <input type="text" id="guest-equipment" required placeholder="e.g. 24ft Camper Van or 4-Person Tent" class="w-full bg-white border border-sand-300 focus:border-forest-600 focus:ring-2 focus:ring-forest-600/20 rounded-xl px-3.5 py-2 text-sm outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-forest-700 mb-1">Confirmed Guests</label>
+                        <input type="number" id="guest-party-size" min="1" max="12" value="2" required class="w-full bg-white border border-sand-300 focus:border-forest-600 focus:ring-2 focus:ring-forest-600/20 rounded-xl px-3.5 py-2 text-sm outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-forest-700 mb-1">Special Requests (Optional)</label>
+                    <textarea id="guest-notes" rows="2" placeholder="Firewood bundle at arrival, late check-in after 8 PM, bringing 1 dog..." class="w-full bg-white border border-sand-300 focus:border-forest-600 focus:ring-2 focus:ring-forest-600/20 rounded-xl px-3.5 py-2 text-sm outline-none resize-none"></textarea>
+                </div>
+
+                <!-- Submit Actions -->
+                <div class="pt-2 flex items-center justify-end gap-3">
+                    <button type="button" id="cancel-booking-btn" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-forest-700 hover:bg-sand-200 transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2.5 rounded-xl text-sm font-bold bg-terracotta-500 hover:bg-terracotta-600 text-white shadow-md transition flex items-center gap-2 active:scale-95">
+                        <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                        <span>Confirm Lease Request</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- DRAWER 2: MY LEASE REQUESTS SLIDE-OVER DRAWER                         -->
+    <!-- ===================================================================== -->
+    <div id="requests-drawer" class="fixed inset-0 z-50 hidden">
+        <!-- Backdrop -->
+        <div id="requests-backdrop" class="fixed inset-0 bg-forest-950/50 backdrop-blur-xs transition-opacity"></div>
+
+        <!-- Drawer Panel -->
+        <div class="fixed inset-y-0 right-0 max-w-md w-full bg-sand-50 shadow-2xl border-l border-sand-300 flex flex-col z-10">
+            <div class="bg-forest-900 text-sand-50 px-6 py-5 flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <i data-lucide="clipboard-list" class="w-5 h-5 text-amber-300"></i>
+                    <div>
+                        <h3 class="font-serif text-lg font-bold text-white leading-tight">My Lease Requests</h3>
+                        <p class="text-xs text-forest-300">Active &amp; confirmed campsite leases</p>
+                    </div>
+                </div>
+                <button id="close-requests-btn" class="p-1.5 rounded-lg text-forest-300 hover:text-white hover:bg-forest-800 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Requests List Container -->
+            <div id="user-requests-list" class="flex-grow overflow-y-auto p-5 space-y-4">
+                <!-- Populated dynamically -->
+            </div>
+
+            <div class="p-4 bg-sand-100 border-t border-sand-300 text-xs text-forest-600 text-center">
+                Canceling a lease immediately releases those dates back into live campground inventory.
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // =========================================================================
+        // 1. DATE UTILITIES (Local YYYY-MM-DD safe parsing without timezone drift)
+        // =========================================================================
+        function formatDateISO(dateObj) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function addDays(baseDate, days) {
+            const copy = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+            copy.setDate(copy.getDate() + days);
+            return copy;
+        }
+
+        function parseISODate(isoStr) {
+            const [y, m, d] = isoStr.split('-').map(Number);
+            return new Date(y, m - 1, d);
+        }
+
+        function formatHumanDate(isoStr) {
+            const d = parseISODate(isoStr);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function calculateNights(checkinStr, checkoutStr) {
+            const start = parseISODate(checkinStr);
+            const end = parseISODate(checkoutStr);
+            const diffTime = end - start;
+            return Math.round(diffTime / (1000 * 60 * 60 * 24));
+        }
+
+        /**
+         * Core Overlap Formula:
+         * Two date intervals [startA, endA) and [startB, endB) overlap if:
+         * startA < endB AND endA > startB.
+         * Note: Checkout day of one booking can equal Check-in day of the next!
+         */
+        function doRangesOverlap(startA, endA, startB, endB) {
+            return startA < endB && endA > startB;
+        }
+
+        // =========================================================================
+        // 2. CAMPSITE INVENTORY & INITIAL SEED RESERVATIONS
+        // =========================================================================
+        const TODAY = new Date(); // Anchor relative to user's current session date
+
+        const CAMPSITES = [
+            {
+                id: 'W-01',
+                name: 'Heron Cove Waterfront',
+                type: 'Waterfront',
+                rate: 85,
+                maxGuests: 6,
+                amenities: ['Waterfront', 'Firepit', 'Picnic Table', 'Potable Water'],
+                description: 'Private shoreline access on Cedar Lake with direct sunrise views and timber bench.',
+                image: 'https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?auto=format&fit=crop&w=800&q=80',
+                mapCoords: { x: 165, y: 165 }
+            },
+            {
+                id: 'W-02',
+                name: 'Osprey Point Landing',
+                type: 'Waterfront',
+                rate: 95,
+                maxGuests: 6,
+                amenities: ['Waterfront', 'Electric 20A', 'Firepit', 'Kayak Rack'],
+                description: 'Elevated cedar point overlooking the quiet cove, ideal for paddleboarders and anglers.',
+                image: 'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?auto=format&fit=crop&w=800&q=80',
+                mapCoords: { x: 355, y: 160 }
+            },
+            {
+                id: 'RV-04',
+                name: 'Timberline Full-Hookup #4',
+                type: 'RV Hookup',
+                rate: 78,
+                maxGuests: 8,
+                amenities: ['50A Electric', 'Water/Sewer', 'Pull-Through', 'Wi-Fi'],
+                description: 'Level 55-foot gravel pull-through pad shaded by mature ponderosa pines.',
+                image: 'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?auto=format&fit=crop&w=800&q=80',
+                mapCoords: { x: 645, y: 175 }
+            },
+            {
+                id: 'RV-07',
+                name: 'Granite Ridge RV Pad #7',
+                type: 'RV Hookup',
+                rate: 72,
+                maxGuests: 6,
+                amenities: ['30A Electric', 'Potable Water', 'Firepit', 'Wi-Fi'],
+                description: 'Back-in spacious RV site steps from Ridgecrest trailhead and bathhouse.',
+                image: 'https://images.unsplash.com/photo-1510312305653-8ed4962ae754?auto=format&fit=crop&w=800&q=80',
+                mapCoords: { x: 855, y: 230 }
+            },
+            {
+                id: 'GL-01',
+                name: 'Starlight Safari Canvas Tent',
+                type: 'Glamping Cabin',
+                rate: 145,
+                maxGuests: 4,
+                amenities: ['Queen Bed', 'Wood Stove', 'Electric', 'Wi-Fi', 'Deck'],
+                description: 'Furnished heavy-duty canvas wall tent on a cedar deck with plush bedding and stove.',
+                image: 'https://images.unsplash.com/photo-1499696010180-025ef6e1a8f9?auto=format&fit=crop&w=800&q=80',
+                mapCoords: { x: 845, y: 375 }
+            },
+            {
+                id: 'GL-02',
+                name: 'Whispering Pine A-Frame Cabin',
+                type: 'Glamping Cabin',
+                rate: 175,
+                maxGuests: 4,
+                amenities: ['Heating/AC', 'Mini Fridge', 'Wi-Fi', 'Private Firepit'],
+                description: 'Architectural timber A-frame cabin with skylight window for stargazing from bed.',
+                image: 'https://images.unsplash.com/photo-1449158743715-0a90ebb6d2d8?auto=format&fit=crop&w=800&q=80',
+                mapCoords: { x: 745, y: 455 }
+            },
+            {
+                id: 'T-11',
+                name: 'Fern Hollow Walk-In Tent Site',
+                type: 'Tent Site',
+                rate: 42,
+                maxGuests: 4,
+                amenities: ['Firepit', 'Bear Box', 'Picnic Table', 'Shade'],
+                description: 'Secluded mossy clearing surrounded by ferns; short 40-yard walk from parking spur.',
+                image: 'https://images.unsplash.com/photo-1478131143081-80f7f84ca84d?auto=format&fit=crop&w=800&q=80',
+                mapCoords: { x: 525, y: 280 }
+            },
+            {
+                id: 'T-14',
+                name: 'Boulder Creek Group Tent Site',
+                type: 'Tent Site',
+                rate: 58,
+                maxGuests: 10,
+                amenities: ['Double Pad', 'Large Fire Ring', 'Potable Water', 'Picnic Tables'],
+                description: 'Expansive twin-tent pad accommodating up to 3 tents comfortably near the south creek.',
+                image: 'https://images.unsplash.com/photo-1537905569824-f89f14cceb68?auto=format&fit=crop&w=800&q=80',
+                mapCoords: { x: 400, y: 445 }
+            },
+            {
+                id: 'T-18',
+                name: 'Sunset Meadow Tent Clearing',
+                type: 'Tent Site',
+                rate: 46,
+                maxGuests: 6,
+                amenities: ['Firepit', 'Picnic Table', 'Wi-Fi', 'Lake View'],
+                description: 'Open wildflower meadow pitch with unobstructed evening views across Cedar Lake.',
+                image: 'https://images.unsplash.com/photo-1517824806704-9040b037703b?auto=format&fit=crop&w=800&q=80',
+                mapCoords: { x: 115, y: 405 }
+            }
+        ];
+
+        // Pre-populated realistic existing reservations so changing dates reveals dynamic availability
+        const STORAGE_KEY = 'pinecrest_bernice_reservations_v1';
+
+        const DEFAULT_RESERVATIONS = [
+            // Booked during "This Weekend" (Days +2 to +5)
+            {
+                id: 'RES-8410',
+                siteId: 'W-01',
+                checkin: formatDateISO(addDays(TODAY, 2)),
+                checkout: formatDateISO(addDays(TODAY, 5)),
+                guestName: 'Elena Rostova',
+                guestEmail: 'elena.r@example.com',
+                equipment: '2-Person Touring Kayak & Tent',
+                partySize: 2,
+                notes: 'Arriving around 4 PM.',
+                totalPrice: 280,
+                isUserBooking: false
+            },
+            {
+                id: 'RES-8412',
+                siteId: 'GL-02',
+                checkin: formatDateISO(addDays(TODAY, 1)),
+                checkout: formatDateISO(addDays(TODAY, 4)),
+                guestName: 'Marcus Sterling',
+                guestEmail: 'msterling@example.com',
+                equipment: 'SUV / Cabin Lease',
+                partySize: 2,
+                notes: 'Anniversary weekend trip.',
+                totalPrice: 550,
+                isUserBooking: false
+            },
+            {
+                id: 'RES-8419',
+                siteId: 'RV-04',
+                checkin: formatDateISO(addDays(TODAY, 2)),
+                checkout: formatDateISO(addDays(TODAY, 6)),
+                guestName: 'David & Sarah Miller',
+                guestEmail: 'millers.rv@example.com',
+                equipment: '32ft Class C Motorhome',
+                partySize: 4,
+                notes: '',
+                totalPrice: 337,
+                isUserBooking: false
+            },
+            // Booked during "Next Week" (Days +7 to +11)
+            {
+                id: 'RES-8455',
+                siteId: 'W-02',
+                checkin: formatDateISO(addDays(TODAY, 7)),
+                checkout: formatDateISO(addDays(TODAY, 11)),
+                guestName: 'Hannah Abbott',
+                guestEmail: 'habbott@example.com',
+                equipment: 'Overland Rooftop Tent',
+                partySize: 3,
+                notes: '',
+                totalPrice: 405,
+                isUserBooking: false
+            },
+            {
+                id: 'RES-8461',
+                siteId: 'T-11',
+                checkin: formatDateISO(addDays(TODAY, 8)),
+                checkout: formatDateISO(addDays(TODAY, 12)),
+                guestName: 'Liam O’Connor',
+                guestEmail: 'liam.oc@example.com',
+                equipment: 'Backpacking Tent',
+                partySize: 2,
+                notes: '',
+                totalPrice: 193,
+                isUserBooking: false
+            },
+            // Booked during "Holiday Week" (Days +14 to +19)
+            {
+                id: 'RES-8501',
+                siteId: 'GL-01',
+                checkin: formatDateISO(addDays(TODAY, 14)),
+                checkout: formatDateISO(addDays(TODAY, 19)),
+                guestName: 'Chloe Bennett',
+                guestEmail: 'cbennett@example.com',
+                equipment: 'Sedan / Glamping Lease',
+                partySize: 4,
+                notes: 'Extra firewood bundle requested.',
+                totalPrice: 750,
+                isUserBooking: false
+            },
+            // Sample pre-existing User Request so the user can immediately inspect "My Lease Requests"
+            {
+                id: 'REQ-9024',
+                siteId: 'T-18',
+                checkin: formatDateISO(addDays(TODAY, 10)),
+                checkout: formatDateISO(addDays(TODAY, 13)),
+                guestName: 'Alex Mercer (Demo User)',
+                guestEmail: 'alex.mercer@example.com',
+                equipment: 'Subaru Outback + 3-Person Dome Tent',
+                partySize: 2,
+                notes: 'Looking forward to sunset views!',
+                totalPrice: 163,
+                isUserBooking: true
+            }
+        ];
+
+        function loadReservations() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                }
+            } catch (err) {
+                console.warn('Unable to read localStorage, falling back to default reservations.', err);
+            }
+            return [...DEFAULT_RESERVATIONS];
+        }
+
+        function saveReservations() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(reservations));
+            } catch (err) {
+                console.warn('Unable to save reservations to localStorage.', err);
+            }
+        }
+
+        let reservations = loadReservations();
+
+        // =========================================================================
+        // 3. APPLICATION STATE
+        // =========================================================================
+        const state = {
+            checkin: formatDateISO(addDays(TODAY, 2)),
+            checkout: formatDateISO(addDays(TODAY, 5)),
+            siteType: 'All',
+            minGuests: 2,
+            showUnavailable: true,
+            viewMode: 'grid', // 'grid' | 'map'
+            selectedMapSiteId: null,
+            activeBookingSiteId: null
+        };
+
+        // =========================================================================
+        // 4. DOM ELEMENT REFERENCES
+        // =========================================================================
+        const checkinInput = document.getElementById('checkin-input');
+        const checkoutInput = document.getElementById('checkout-input');
+        const typeFilter = document.getElementById('type-filter');
+        const guestsFilter = document.getElementById('guests-filter');
+        const showUnavailableToggle = document.getElementById('show-unavailable-toggle');
+        const nightsDisplay = document.getElementById('nights-display');
+        const availabilityCounter = document.getElementById('availability-counter');
+        const activePeriodLabel = document.getElementById('active-period-label');
+        const dateErrorBanner = document.getElementById('date-error-banner');
+        const dateErrorText = document.getElementById('date-error-text');
+
+        const gridViewContainer = document.getElementById('grid-view-container');
+        const mapViewContainer = document.getElementById('map-view-container');
+        const emptyState = document.getElementById('empty-state');
+        const viewGridBtn = document.getElementById('view-grid-btn');
+        const viewMapBtn = document.getElementById('view-map-btn');
+        const mapPinsLayer = document.getElementById('map-pins-layer');
+        const mapPreviewInfo = document.getElementById('map-preview-info');
+        const mapPreviewActions = document.getElementById('map-preview-actions');
+
+        // Booking Modal Elements
+        const bookingModal = document.getElementById('booking-modal');
+        const bookingForm = document.getElementById('booking-form');
+        const modalSiteTitle = document.getElementById('modal-site-title');
+        const modalDatesText = document.getElementById('modal-dates-text');
+        const modalSiteTypeBadge = document.getElementById('modal-site-type-badge');
+        const modalRateCalc = document.getElementById('modal-rate-calc');
+        const modalSubtotal = document.getElementById('modal-subtotal');
+        const modalParkFee = document.getElementById('modal-park-fee');
+        const modalTotalPrice = document.getElementById('modal-total-price');
+
+        // Requests Drawer Elements
+        const requestsDrawer = document.getElementById('requests-drawer');
+        const userRequestsList = document.getElementById('user-requests-list');
+        const requestsBadge = document.getElementById('requests-badge');
+
+        // =========================================================================
+        // 5. AVAILABILITY ENGINE & FILTERING
+        // =========================================================================
+        function isSiteAvailable(siteId, checkin, checkout) {
+            const conflictingBooking = reservations.find(res =>
+                res.siteId === siteId && doRangesOverlap(checkin, checkout, res.checkin, res.checkout)
+            );
+            return {
+                available: !conflictingBooking,
+                conflict: conflictingBooking || null
+            };
+        }
+
+        function getEvaluatedSites() {
+            return CAMPSITES.map(site => {
+                const matchesType = state.siteType === 'All' || site.type === state.siteType;
+                const matchesGuests = site.maxGuests >= state.minGuests;
+                const { available, conflict } = isSiteAvailable(site.id, state.checkin, state.checkout);
+
+                return {
+                    ...site,
+                    matchesFilters: matchesType && matchesGuests,
+                    available,
+                    conflict
+                };
+            });
+        }
+
+        // =========================================================================
+        // 6. RENDERING FUNCTIONS
+        // =========================================================================
+        function renderApp() {
+            const nights = calculateNights(state.checkin, state.checkout);
+
+            // Validate Date Range
+            if (isNaN(nights) || nights <= 0) {
+                dateErrorBanner.classList.remove('hidden');
+                dateErrorText.textContent = 'Check-out date must be at least 1 night after your check-in date.';
+                nightsDisplay.textContent = 'Invalid Dates';
+                return;
+            } else {
+                dateErrorBanner.classList.add('hidden');
+                nightsDisplay.textContent = `${nights} Night${nights > 1 ? 's' : ''} Selected`;
+            }
+
+            activePeriodLabel.textContent = `Lease Window: ${formatHumanDate(state.checkin)} – ${formatHumanDate(state.checkout)} (${nights} night${nights > 1 ? 's' : ''})`;
+
+            const evaluatedSites = getEvaluatedSites();
+            const matchingFilterSites = evaluatedSites.filter(s => s.matchesFilters);
+            const availableMatchingSites = matchingFilterSites.filter(s => s.available);
+
+            // Update Availability Counter Badge
+            availabilityCounter.textContent = `${availableMatchingSites.length} of ${matchingFilterSites.length} Available`;
+            if (availableMatchingSites.length === 0) {
+                availabilityCounter.className = 'bg-rose-100 text-rose-800 border border-rose-200 text-xs font-bold px-2.5 py-1 rounded-full';
+            } else {
+                availabilityCounter.className = 'bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold px-2.5 py-1 rounded-full';
+            }
+
+            // Filter out unavailable if toggle is unchecked
+            const visibleGridSites = matchingFilterSites.filter(s => state.showUnavailable || s.available);
+
+            // Render Grid View
+            renderGridView(visibleGridSites, nights);
+
+            // Render Map View
+            renderMapView(evaluatedSites, nights);
+
+            // Render User Requests Badge & List
+            renderUserRequests();
+
+            // Re-initialize Lucide Icons
+            lucide.createIcons();
+        }
+
+        function getTypeBadgeStyle(type) {
+            switch (type) {
+                case 'Waterfront': return 'bg-sky-100 text-sky-900 border-sky-200';
+                case 'RV Hookup': return 'bg-amber-100 text-amber-900 border-amber-200';
+                case 'Glamping Cabin': return 'bg-purple-100 text-purple-900 border-purple-200';
+                default: return 'bg-forest-100 text-forest-800 border-forest-200';
+            }
+        }
+
+        function renderGridView(sites, nights) {
+            gridViewContainer.innerHTML = '';
+
+            if (sites.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+
+            sites.forEach((site, idx) => {
+                const totalStayPrice = site.rate * nights;
+                const card = document.createElement('article');
+                card.style.animationDelay = `${idx * 40}ms`;
+                card.className = `animate-card bg-white rounded-2xl border ${site.available ? 'border-sand-300 hover:border-forest-500 hover:shadow-xl' : 'border-sand-200 opacity-85'} overflow-hidden shadow-sm transition-all flex flex-col justify-between`;
+
+                const amenitiesHtml = site.amenities.map(am =>
+                    `<span class="inline-flex items-center gap-1 text-[11px] font-medium bg-sand-100 text-forest-800 px-2 py-0.5 rounded-md border border-sand-200">${am}</span>`
+                ).join('');
+
+                const statusBadgeHtml = site.available
+                    ? `<span class="inline-flex items-center gap-1.5 bg-emerald-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-200 animate-pulse"></span>Available
+                       </span>`
+                    : `<span class="inline-flex items-center gap-1.5 bg-rose-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">
+                         <i data-lucide="lock" class="w-3 h-3"></i>Leased
+                       </span>`;
+
+                const conflictNoteHtml = !site.available && site.conflict
+                    ? `<div class="mt-3 text-xs bg-rose-50 text-rose-800 border border-rose-200 rounded-lg px-3 py-2 flex items-center gap-2">
+                         <i data-lucide="calendar-x" class="w-4 h-4 text-rose-600 shrink-0"></i>
+                         <span>Booked ${formatHumanDate(site.conflict.checkin)} – ${formatHumanDate(site.conflict.checkout)}</span>
+                       </div>`
+                    : '';
+
+                const actionButtonHtml = site.available
+                    ? `<button type="button" onclick="openBookingModal('${site.id}')" class="w-full sm:w-auto px-4 py-2.5 bg-forest-800 hover:bg-terracotta-500 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center justify-center gap-1.5 active:scale-95">
+                         <span>Request Lease</span>
+                         <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                       </button>`
+                    : `<button type="button" disabled class="w-full sm:w-auto px-4 py-2.5 bg-sand-200 text-forest-400 text-xs font-bold rounded-xl cursor-not-allowed">
+                         Unavailable
+                       </button>`;
+
+                card.innerHTML = `
+                    <div>
+                        <!-- Image Header -->
+                        <div class="relative h-48 bg-forest-800 overflow-hidden">
+                            <img src="${site.image}" alt="${site.name}" onerror="this.src='https://placehold.co/800x500/2b5140/fdfcfa?text=${encodeURIComponent(site.name)}'" class="w-full h-full object-cover ${site.available ? 'hover:scale-105' : 'grayscale-[45%]'} transition duration-500">
+                            <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20"></div>
+                            
+                            <!-- Top Badges -->
+                            <div class="absolute top-3 left-3 right-3 flex items-center justify-between">
+                                <span class="bg-forest-950/85 backdrop-blur-xs text-sand-50 font-mono text-xs font-bold px-2.5 py-1 rounded-lg border border-white/15">
+                                    SITE ${site.id}
+                                </span>
+                                ${statusBadgeHtml}
+                            </div>
+
+                            <!-- Bottom Overlay Info -->
+                            <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white">
+                                <span class="text-xs font-bold px-2.5 py-0.5 rounded-md border ${getTypeBadgeStyle(site.type)}">
+                                    ${site.type}
+                                </span>
+                                <span class="text-xs font-semibold bg-black/50 backdrop-blur-xs px-2.5 py-1 rounded-lg flex items-center gap-1">
+                                    <i data-lucide="users" class="w-3.5 h-3.5 text-amber-300"></i>Up to ${site.maxGuests}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Card Content -->
+                        <div class="p-5">
+                            <h4 class="font-serif text-lg font-bold text-forest-900 leading-snug">${site.name}</h4>
+                            <p class="text-xs text-forest-600 mt-1.5 leading-relaxed">${site.description}</p>
+                            
+                            <!-- Amenities -->
+                            <div class="flex flex-wrap gap-1.5 mt-3.5">
+                                ${amenitiesHtml}
+                            </div>
+
+                            ${conflictNoteHtml}
+                        </div>
+                    </div>
+
+                    <!-- Card Pricing Footer -->
+                    <div class="px-5 py-4 bg-sand-50 border-t border-sand-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <div class="flex items-baseline gap-1">
+                                <span class="text-lg font-bold text-forest-900">$${site.rate}</span>
+                                <span class="text-xs text-forest-600">/ night</span>
+                            </div>
+                            <p class="text-[11px] font-semibold text-forest-700">
+                                $${totalStayPrice} total for ${nights} night${nights > 1 ? 's' : ''}
+                            </p>
+                        </div>
+                        ${actionButtonHtml}
+                    </div>
+                `;
+
+                gridViewContainer.appendChild(card);
+            });
+        }
+
+        function renderMapView(evaluatedSites, nights) {
+            mapPinsLayer.innerHTML = '';
+
+            evaluatedSites.forEach(site => {
+                // Determine pin color based on filter match & availability
+                let fill = '#059669'; // Emerald (Available)
+                let stroke = '#ffffff';
+                let opacity = '1';
+
+                if (!site.matchesFilters) {
+                    fill = '#94a3b8'; // Slate (Filtered out)
+                    opacity = '0.55';
+                } else if (!site.available) {
+                    fill = '#e11d48'; // Rose (Booked)
+                    if (!state.showUnavailable) opacity = '0.35';
+                }
+
+                const isSelected = state.selectedMapSiteId === site.id;
+
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                g.setAttribute('transform', `translate(${site.mapCoords.x}, ${site.mapCoords.y})`);
+                g.setAttribute('class', 'map-pin');
+                g.setAttribute('opacity', opacity);
+                g.addEventListener('click', () => {
+                    state.selectedMapSiteId = site.id;
+                    renderMapView(evaluatedSites, nights);
+                    updateMapSelectedBar(site, nights);
+                });
+
+                // Selection Pulse Ring
+                if (isSelected) {
+                    const ring = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    ring.setAttribute('r', '26');
+                    ring.setAttribute('fill', 'none');
+                    ring.setAttribute('stroke', '#c85a32');
+                    ring.setAttribute('stroke-width', '3');
+                    ring.setAttribute('stroke-dasharray', '4,3');
+                    g.appendChild(ring);
+                }
+
+                // Pin Pill Background
+                const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                rect.setAttribute('x', '-26');
+                rect.setAttribute('y', '-15');
+                rect.setAttribute('width', '52');
+                rect.setAttribute('height', '30');
+                rect.setAttribute('rx', '15');
+                rect.setAttribute('fill', fill);
+                rect.setAttribute('stroke', isSelected ? '#152920' : stroke);
+                rect.setAttribute('stroke-width', isSelected ? '3' : '2.5');
+                g.appendChild(rect);
+
+                // Pin Site ID Text
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('y', '4');
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('fill', '#ffffff');
+                text.setAttribute('font-family', 'Inter, sans-serif');
+                text.setAttribute('font-weight', '700');
+                text.setAttribute('font-size', '11');
+                text.textContent = site.id;
+                g.appendChild(text);
+
+                mapPinsLayer.appendChild(g);
+            });
+
+            // Keep selected site bar synchronized if dates changed while site is selected
+            if (state.selectedMapSiteId) {
+                const currentSite = evaluatedSites.find(s => s.id === state.selectedMapSiteId);
+                if (currentSite) updateMapSelectedBar(currentSite, nights);
+            }
+        }
+
+        function updateMapSelectedBar(site, nights) {
+            const totalStayPrice = site.rate * nights;
+            const statusPill = site.available
+                ? `<span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">Available</span>`
+                : `<span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200">Booked (${formatHumanDate(site.conflict.checkin)} – ${formatHumanDate(site.conflict.checkout)})</span>`;
+
+            mapPreviewInfo.innerHTML = `
+                <div class="w-12 h-12 rounded-xl bg-forest-900 text-sand-50 flex flex-col items-center justify-center shrink-0 font-mono font-bold text-xs">
+                    <span>SITE</span>
+                    <span class="text-amber-300">${site.id}</span>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h4 class="font-serif font-bold text-base text-forest-900">${site.name}</h4>
+                        ${statusPill}
+                        <span class="text-xs text-forest-600 font-medium">• ${site.type} (Max ${site.maxGuests} guests)</span>
+                    </div>
+                    <p class="text-xs text-forest-600 mt-0.5">${site.amenities.join(' • ')}</p>
+                </div>
+            `;
+
+            mapPreviewActions.classList.remove('hidden');
+            if (site.available) {
+                mapPreviewActions.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-forest-900">$${site.rate}<span class="text-xs font-normal text-forest-600">/night</span></p>
+                            <p class="text-xs font-semibold text-terracotta-600">$${totalStayPrice} total (${nights} nights)</p>
+                        </div>
+                        <button type="button" onclick="openBookingModal('${site.id}')" class="px-5 py-2.5 bg-terracotta-500 hover:bg-terracotta-600 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+                            <span>Request Lease</span>
+                            <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                `;
+            } else {
+                mapPreviewActions.innerHTML = `
+                    <button type="button" disabled class="px-4 py-2.5 bg-sand-200 text-forest-400 text-xs font-bold rounded-xl cursor-not-allowed">
+                        Dates Unavailable
+                    </button>
+                `;
+            }
+            lucide.createIcons();
+        }
+
+        // =========================================================================
+        // 7. BOOKING MODAL WORKFLOW
+        // =========================================================================
+        window.openBookingModal = function(siteId) {
+            const site = CAMPSITES.find(s => s.id === siteId);
+            if (!site) return;
+
+            const nights = calculateNights(state.checkin, state.checkout);
+            if (nights <= 0) return;
+
+            state.activeBookingSiteId = siteId;
+            const parkFee = 25;
+            const subtotal = site.rate * nights;
+            const total = subtotal + parkFee;
+
+            modalSiteTitle.textContent = `Site ${site.id} • ${site.name}`;
+            modalDatesText.textContent = `${formatHumanDate(state.checkin)} → ${formatHumanDate(state.checkout)} (${nights} Night${nights > 1 ? 's' : ''})`;
+            modalSiteTypeBadge.textContent = site.type;
+
+            modalRateCalc.textContent = `$${site.rate} × ${nights} night${nights > 1 ? 's' : ''}`;
+            modalSubtotal.textContent = `$${subtotal.toFixed(2)}`;
+            modalParkFee.textContent = `$${parkFee.toFixed(2)}`;
+            modalTotalPrice.textContent = `$${total.toFixed(2)}`;
+
+            const partyInput = document.getElementById('guest-party-size');
+            partyInput.max = site.maxGuests;
+            partyInput.value = Math.min(state.minGuests, site.maxGuests);
+
+            bookingModal.classList.remove('hidden');
+            bookingModal.classList.add('flex');
+        };
+
+        function closeBookingModal() {
+            bookingModal.classList.add('hidden');
+            bookingModal.classList.remove('flex');
+            state.activeBookingSiteId = null;
+        }
+
+        bookingForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const site = CAMPSITES.find(s => s.id === state.activeBookingSiteId);
+            if (!site) return;
+
+            // Double-check live availability prior to committing
+            const { available } = isSiteAvailable(site.id, state.checkin, state.checkout);
+            if (!available) {
+                showToast('Sorry, those dates were just reserved.', 'error');
+                closeBookingModal();
+                renderApp();
+                return;
+            }
+
+            const nights = calculateNights(state.checkin, state.checkout);
+            const totalPrice = (site.rate * nights) + 25;
+            const reqId = `REQ-${Math.floor(1000 + Math.random() * 9000)}`;
+
+            const newReservation = {
+                id: reqId,
+                siteId: site.id,
+                checkin: state.checkin,
+                checkout: state.checkout,
+                guestName: document.getElementById('guest-name').value.trim(),
+                guestEmail: document.getElementById('guest-email').value.trim(),
+                equipment: document.getElementById('guest-equipment').value.trim(),
+                partySize: Number(document.getElementById('guest-party-size').value),
+                notes: document.getElementById('guest-notes').value.trim(),
+                totalPrice,
+                isUserBooking: true
+            };
+            // Add directly to in-memory reservations state & persist
+            reservations.unshift(newReservation);
+            saveReservations();
+
+            closeBookingModal();
+            bookingForm.reset();
+            renderApp();
+            showToast(`Lease Request ${reqId} confirmed for Site ${site.id}!`, 'success');
+        });
+
+        // =========================================================================
+        // 8. MY LEASE REQUESTS DRAWER & CANCELLATION
+        // =========================================================================
+        function renderUserRequests() {
+            const userBookings = reservations.filter(r => r.isUserBooking);
+            requestsBadge.textContent = userBookings.length;
+
+            if (userBookings.length === 0) {
+                userRequestsList.innerHTML = `
+                    <div class="text-center py-12 px-4">
+                        <div class="w-12 h-12 rounded-2xl bg-sand-200 text-forest-600 flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="tent" class="w-6 h-6"></i>
+                        </div>
+                        <p class="font-serif font-bold text-forest-900">No Active Lease Requests</p>
+                        <p class="text-xs text-forest-600 mt-1">Select any available campsite and submit a request to see it tracked here.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            userRequestsList.innerHTML = userBookings.map(booking => {
+                const site = CAMPSITES.find(s => s.id === booking.siteId);
+                const nights = calculateNights(booking.checkin, booking.checkout);
+
+                return `
+                    <div class="bg-white rounded-xl border border-sand-300 p-4 shadow-sm space-y-3">
+                        <div class="flex items-start justify-between gap-2">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono text-xs font-bold bg-forest-100 text-forest-800 px-2 py-0.5 rounded">${booking.id}</span>
+                                    <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Reserved</span>
+                                </div>
+                                <h4 class="font-serif font-bold text-base text-forest-900 mt-1.5">Site ${booking.siteId} • ${site ? site.name : 'Campsite'}</h4>
+                            </div>
+                            <span class="font-bold text-sm text-terracotta-600">$${booking.totalPrice}</span>
+                        </div>
+
+                        <div class="bg-sand-50 rounded-lg p-3 text-xs space-y-1.5 border border-sand-200">
+                            <div class="flex justify-between">
+                                <span class="text-forest-600">Lease Period:</span>
+                                <span class="font-bold text-forest-900">${formatHumanDate(booking.checkin)} – ${formatHumanDate(booking.checkout)} (${nights}n)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-forest-600">Lessee:</span>
+                                <span class="font-medium text-forest-900">${booking.guestName} (${booking.partySize} guests)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-forest-600">Setup:</span>
+                                <span class="font-medium text-forest-900 truncate max-w-[180px]">${booking.equipment}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-1">
+                            <button type="button" onclick="jumpToBookingDates('${booking.checkin}', '${booking.checkout}')" class="text-xs font-semibold text-forest-700 hover:text-forest-900 underline">
+                                View Dates on Calendar
+                            </button>
+                            <button type="button" onclick="cancelUserBooking('${booking.id}')" class="text-xs font-bold text-rose-600 hover:text-rose-800 hover:bg-rose-50 px-2.5 py-1.5 rounded-lg transition flex items-center gap-1">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                <span>Release Lease</span>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        window.cancelUserBooking = function(bookingId) {
+            const idx = reservations.findIndex(r => r.id === bookingId);
+            if (idx !== -1) {
+                const removed = reservations.splice(idx, 1)[0];
+                saveReservations();
+                renderApp();
+                showToast(`Released lease ${removed.id}. Site ${removed.siteId} is now available again.`, 'info');
+            }
+        };
+
+        window.jumpToBookingDates = function(checkin, checkout) {
+            state.checkin = checkin;
+            state.checkout = checkout;
+            checkinInput.value = checkin;
+            checkoutInput.value = checkout;
+            requestsDrawer.classList.add('hidden');
+            renderApp();
+        };
+
+        // =========================================================================
+        // 9. TOAST NOTIFICATION SYSTEM (No alert() or confirm())
+        // =========================================================================
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgClass = type === 'error' ? 'bg-rose-900 border-rose-700' : type === 'info' ? 'bg-forest-800 border-forest-600' : 'bg-forest-900 border-emerald-500';
+            const iconName = type === 'error' ? 'alert-circle' : type === 'info' ? 'info' : 'check-circle-2';
+
+            toast.className = `pointer-events-auto ${bgClass} text-white px-4 py-3 rounded-xl shadow-xl border flex items-center gap-3 text-xs font-semibold animate-card`;
+            toast.innerHTML = `
+                <i data-lucide="${iconName}" class="w-4 h-4 text-amber-300 shrink-0"></i>
+                <span class="leading-snug">${message}</span>
+            `;
+            container.appendChild(toast);
+            lucide.createIcons();
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(8px)';
+                toast.style.transition = 'all 0.25s ease';
+                setTimeout(() => toast.remove(), 250);
+            }, 3800);
+        }
+
+        // =========================================================================
+        // 10. EVENT LISTENERS & INITIALIZATION
+        // =========================================================================
+        function init() {
+            // Set initial input values
+            checkinInput.value = state.checkin;
+            checkinInput.min = formatDateISO(TODAY);
+            checkoutInput.value = state.checkout;
+            checkoutInput.min = formatDateISO(addDays(TODAY, 1));
+
+            // Date input handlers
+            checkinInput.addEventListener('change', (e) => {
+                state.checkin = e.target.value;
+                // Auto-push checkout if check-in moves past checkout
+                if (state.checkin >= state.checkout) {
+                    const nextDay = formatDateISO(addDays(parseISODate(state.checkin), 2));
+                    state.checkout = nextDay;
+                    checkoutInput.value = nextDay;
+                }
+                checkoutInput.min = formatDateISO(addDays(parseISODate(state.checkin), 1));
+                renderApp();
+            });
+
+            checkoutInput.addEventListener('change', (e) => {
+                state.checkout = e.target.value;
+                renderApp();
+            });
+
+            // Quick date presets
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const preset = btn.dataset.preset;
+                    if (preset === 'this-weekend') {
+                        state.checkin = formatDateISO(addDays(TODAY, 2));
+                        state.checkout = formatDateISO(addDays(TODAY, 5));
+                    } else if (preset === 'next-week') {
+                        state.checkin = formatDateISO(addDays(TODAY, 7));
+                        state.checkout = formatDateISO(addDays(TODAY, 11));
+                    } else if (preset === 'thanksgiving') {
+                        state.checkin = formatDateISO(addDays(TODAY, 14));
+                        state.checkout = formatDateISO(addDays(TODAY, 19));
+                    }
+                    checkinInput.value = state.checkin;
+                    checkoutInput.value = state.checkout;
+                    renderApp();
+                });
+            });
+
+            // Filters
+            typeFilter.addEventListener('change', (e) => {
+                state.siteType = e.target.value;
+                renderApp();
+            });
+
+            guestsFilter.addEventListener('change', (e) => {
+                state.minGuests = Number(e.target.value);
+                renderApp();
+            });
+
+            showUnavailableToggle.addEventListener('change', (e) => {
+                state.showUnavailable = e.target.checked;
+                renderApp();
+            });
+
+            document.getElementById('reset-filters-btn').addEventListener('click', () => {
+                state.siteType = 'All';
+                state.minGuests = 1;
+                state.showUnavailable = true;
+                typeFilter.value = 'All';
+                guestsFilter.value = '1';
+                showUnavailableToggle.checked = true;
+                renderApp();
+            });
+
+            // View Switcher (Grid vs Map)
+            viewGridBtn.addEventListener('click', () => {
+                state.viewMode = 'grid';
+                viewGridBtn.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-forest-900 shadow-sm transition';
+                viewMapBtn.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-forest-700 hover:text-forest-900 transition';
+                gridViewContainer.classList.remove('hidden');
+                mapViewContainer.classList.add('hidden');
+                renderApp();
+            });
+
+            viewMapBtn.addEventListener('click', () => {
+                state.viewMode = 'map';
+                viewMapBtn.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-white text-forest-900 shadow-sm transition';
+                viewGridBtn.className = 'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold text-forest-700 hover:text-forest-900 transition';
+                mapViewContainer.classList.remove('hidden');
+                gridViewContainer.classList.add('hidden');
+                emptyState.classList.add('hidden');
+                renderApp();
+            });
+
+            // Modal & Drawer Triggers
+            document.getElementById('close-booking-modal').addEventListener('click', closeBookingModal);
+            document.getElementById('cancel-booking-btn').addEventListener('click', closeBookingModal);
+            bookingModal.addEventListener('click', (e) => {
+                if (e.target === bookingModal) closeBookingModal();
+            });
+
+            document.getElementById('open-requests-btn').addEventListener('click', () => {
+                requestsDrawer.classList.remove('hidden');
+                lucide.createIcons();
+            });
+            document.getElementById('close-requests-btn').addEventListener('click', () => {
+                requestsDrawer.classList.add('hidden');
+            });
+            document.getElementById('requests-backdrop').addEventListener('click', () => {
+                requestsDrawer.classList.add('hidden');
+            });
+
+            // Initial Render
+            renderApp();
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
